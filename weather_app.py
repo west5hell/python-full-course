@@ -83,32 +83,74 @@ class WeatherApp(QWidget):
         except requests.exceptions.HTTPError as http_error:
             match response.status_code:
                 case 400:
-                    print("Bad request\nPlease check your input")
+                    self.display_error("Bad request:\nPlease check your input")
                 case 401:
-                    print("Unauthorized\nInvalid API key")
+                    self.display_error("Unauthorized:\nInvalid API key")
                 case 403:
-                    print("Forbidden\nAccess is denied")
+                    self.display_error("Forbidden:\nAccess is denied")
                 case 404:
-                    print("Not Found\nCity not found")
+                    self.display_error("Not Found:\nCity not found")
                 case 500:
-                    print("Internal Server Error\nPlease try again later")
+                    self.display_error("Internal Server Error:\nPlease try again later")
                 case 502:
-                    print("Bad Gateway\nInvalid response from the server")
+                    self.display_error("Bad Gateway:\nInvalid response from the server")
                 case 503:
-                    print("Service Unavailable\nServer is down")
+                    self.display_error("Service Unavailable:\nServer is down")
                 case 504:
-                    print("Gateway Timeout\nNo response from the server")
+                    self.display_error("Gateway Timeout:\nNo response from the server")
                 case _:
-                    print(f"HTTP error occured\n{http_error}")
-
-        except requests.exceptions.RequestException:
-            pass
+                    self.display_error(f"HTTP error occured\n{http_error}")
+        except requests.exceptions.ConnectionError:
+            self.display_error("Connection Error:\nCheck your internet connection")
+        except requests.exceptions.Timeout:
+            self.display_error("Timeout Error:\nThe request timed out")
+        except requests.exceptions.TooManyRedirects:
+            self.display_error("Too many Redirects:\nCheck the URL")
+        except requests.exceptions.RequestException as req_error:
+            self.display_error(f"Request Error:\n{req_error}")
 
     def display_error(self, message):
-        pass
+        self.temperature_label.setStyleSheet("font-size: 30px;")
+        self.temperature_label.setText(message)
+        self.emoji_label.clear()
+        self.description_label.clear()
 
     def display_weather(self, data):
-        print(data)
+        self.temperature_label.setStyleSheet("font-size: 75px;")
+        temperature_k = data["main"]["temp"]
+        temperature_c = temperature_k - 273.15
+        # temperature_f = (temperature_k * 9 / 5) - 469.67
+        weather_id = data["weather"][0]["id"]
+        weather_description = data["weather"][0]["description"]
+
+        self.temperature_label.setText(f"{temperature_c:.0f}°C")
+        self.emoji_label.setText(self.get_weather_emoji(weather_id))
+        self.description_label.setText(weather_description)
+
+    @staticmethod
+    def get_weather_emoji(weather_id):
+        if weather_id >= 200 and weather_id <= 232:
+            return "⛈️"
+        elif 300 <= weather_id <= 321:
+            return "☁️"
+        elif 500 <= weather_id <= 531:
+            return "🌧️"
+        elif 600 <= weather_id <= 622:
+            return "🌨️"
+        elif 701 <= weather_id <= 741:
+            return "🌫️"
+        elif weather_id == 762:
+            return "🌋"
+        elif weather_id == 771:
+            return "💨"
+        elif weather_id == 781:
+            return "🌪️"
+        elif weather_id == 880:
+            return "🌞"
+        elif 801 <= weather_id <= 804:
+            return "🌥️"
+        else:
+            return ""
 
 
 if __name__ == "__main__":
@@ -116,36 +158,3 @@ if __name__ == "__main__":
     weather_app = WeatherApp()
     weather_app.show()
     sys.exit(app.exec_())
-
-{
-    "coord": {"lon": 116.3972, "lat": 39.9075},
-    "weather": [
-        {"id": 803, "main": "Clouds", "description": "broken clouds", "icon": "04n"}
-    ],
-    "base": "stations",
-    "main": {
-        "temp": 290.09,
-        "feels_like": 288.86,
-        "temp_min": 290.09,
-        "temp_max": 290.09,
-        "pressure": 999,
-        "humidity": 39,
-        "sea_level": 999,
-        "grnd_level": 994,
-    },
-    "visibility": 10000,
-    "wind": {"speed": 2.76, "deg": 196, "gust": 6.57},
-    "clouds": {"all": 51},
-    "dt": 1746972006,
-    "sys": {
-        "type": 1,
-        "id": 9609,
-        "country": "CN",
-        "sunrise": 1746911017,
-        "sunset": 1746962282,
-    },
-    "timezone": 28800,
-    "id": 1816670,
-    "name": "Beijing",
-    "cod": 200,
-}
